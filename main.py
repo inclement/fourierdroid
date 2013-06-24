@@ -121,7 +121,7 @@ class FourierCanvas(Widget):
         self.k_intensity_texture.save('testsave4.png')
         #self.texture.blit_buffer(buf,colorfmt='rgb',bufferfmt='ubyte')
 
-    def set_k_rectangle(self,x,y,val,size=(10,10)):
+    def set_k_rectangle(self,x,y,val,size=(1,1)):
         print 'called set_k_rectangle',x,y,val,size
         self.k_modified = True
         self.karray[x:x+size[0],y:y+size[1]] = val
@@ -129,7 +129,6 @@ class FourierCanvas(Widget):
         print 'getting',x,y,size[0],size[0]
         region = self.k_intensity_texture.get_region(x,y,int(size[0]),(size[1]))
         #region = self.k_intensity_texture.get_region(int(x),int(y),40,40)
-        region.save('testsave1.png')
         #region = self.texture.get_region(x,y,size[0],size[1])
         region_size = region.size
         region_num = region_size[0]*region_size[1]
@@ -172,8 +171,8 @@ class FourierCanvas(Widget):
                     ty > self.square_y and
                     ty < self.square_y + self.square_height):
                     ix,iy = self.coord_to_ind(touch.pos)
-                    #self.set_k_rectangle(ix,iy,1.0)
-           #self.refresh_k_intensity_texture()
+                    self.set_k_rectangle(ix,iy,1.0)
+                self.refresh_k_intensity_texture()
 
 class FourierScreen(BoxLayout):
     def initialise_drawer(self):
