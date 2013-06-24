@@ -1,0 +1,37 @@
+
+<FourierScreen>:
+    orientation: 'vertical'
+
+<FourierCanvas>:
+    square_x: self.x if self.height > self.width else self.x + 0.5*(self.width-self.height)
+    square_y: self.y if self.width > self.height else self.y + 0.5*(self.height-self.width)
+    square_width: min(self.width,self.height)
+    square_height: min(self.width,self.height)
+
+    canvas:
+        Rectangle:
+            texture: root.texture
+            pos: (root.square_x,root.square_y)
+            size: (root.square_width,root.square_height)
+        Color:
+            rgba: (0,0.7,0.2,1)
+        Line:
+            rectangle: (self.square_x,self.square_y,self.square_width,self.square_height)
+            width: 2
+        Line:
+            points: [self.square_x+0.5*self.square_width,self.square_y,self.square_x+0.5*self.square_width,self.square_y+self.square_height]
+        Line:
+            points: [self.square_x,self.square_y+0.5*self.square_height,self.square_x+self.square_width,self.square_y+0.5*self.square_height]
+        
+
+<FourierScreen>:
+    orientation: 'vertical'
+
+<FourierDrawer>:
+    canvas:
+        Rectangle:
+            texture: root.texture
+            pos: root.pos
+            size: root.size
+
+    
