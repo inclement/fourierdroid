@@ -1,8 +1,48 @@
+#:import Window kivy.core.window.Window
 
-<FourierScreen>:
+<Fourier1DScreen>:
     orientation: 'vertical'
+    Fourier1DCanvas:
+        id: canvas
+        size_hint_y: None if Window.width < 0.9*Window.height else 1
+        height: Window.width
+    BoxLayout:
+        orientation: 'horizontal'
+        size_hint_y: None
+        height: sp(40)
+        Button:
+            text: 'real'
+            on_press: canvas.editing = 'real'
+        Button:
+            text: 'imag'
+            on_press: canvas.editing = 'imag'
+    BoxLayout:
+        orientation: 'horizontal'
+        size_hint_y: None
+        height: sp(40)
+        Button:
+            text: 'reset'
+            on_press: canvas.reset()
+        Button:
+            text: 'Perform Fourier transform'
+            on_press: canvas.perform_fourier_transform()
+        Button:
+            text: 'Perform inverse'
+            on_press: canvas.perform_fourier_transform(inverse=True)
 
-<FourierCanvas>:
+<Fourier1DCanvas>:
+    canvas:
+        Color:
+            rgba: (0, 0.7, 0.2, 1)
+        Line:
+            points: [self.x, self.y, self.x+self.width, self.y]
+            width: 2
+        Line:
+            points: [self.x+0.5*self.width, self.y, self.x+0.5*self.width, self.y+self.height]
+            width: 2
+        
+
+<Fourier2DCanvas>:
     square_x: self.x if self.height > self.width else self.x + 0.5*(self.width-self.height)
     square_y: self.y if self.width > self.height else self.y + 0.5*(self.height-self.width)
     square_width: min(self.width,self.height)
@@ -24,9 +64,6 @@
             points: [self.square_x,self.square_y+0.5*self.square_height,self.square_x+self.square_width,self.square_y+0.5*self.square_height]
         
 
-<FourierScreen>:
-    orientation: 'vertical'
-
 <FourierDrawer>:
     canvas:
         Rectangle:
@@ -34,4 +71,30 @@
             pos: root.pos
             size: root.size
 
+    
+<Fourier2DScreen>:
+    orientation: 'vertical'
+    Fourier2DCanvas:
+        id: canvas
+        size_hint_y: None if Window.width < 0.9*Window.height else 1
+        height: Window.width
+    BoxLayout:
+        orientation: 'horizontal'
+        size_hint_y: None
+        height: sp(40)
+        Button:
+            text: 'reset'
+            on_press: canvas.reset()
+        Button:
+            text: 'k-space'
+            on_press: canvas.mode = 'k-space'
+        Button:
+            text: 'Fourier\n phase'
+            on_press: canvas.mode = 'Fourier phase'
+        Button:
+            text: 'Fourier\nintensity'
+            on_press: canvas.mode = 'Fourier intensity'
+    ScrollView:
+        BoxLayout:
+            orientation: 'horizontal'
     
