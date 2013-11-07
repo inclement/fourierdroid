@@ -7,9 +7,12 @@ from kivy.properties import NumericProperty, ReferenceListProperty, ObjectProper
 from kivy.graphics.texture import Texture
 from kivy.graphics.vertex_instructions import Line
 from kivy.graphics.context_instructions import Color
+from kivy.clock import Clock
 
 import numpy as n
 from colorsys import hsv_to_rgb
+
+from toast import toast
 
 __version__ = '0.1'
 
@@ -17,10 +20,8 @@ class Fourier1DScreen(BoxLayout):
     pass
 
 class Fourier1DCanvas(Widget):
-    line_points = NumericProperty(10)
+    line_points = NumericProperty(200)
 
-    function = ObjectProperty(None, allownone=True)
-    
     real_line = ObjectProperty(None, allownone=True)
     imag_line = ObjectProperty(None, allownone=True)
     abs_line = ObjectProperty(None, allownone=True)
@@ -34,6 +35,8 @@ class Fourier1DCanvas(Widget):
     def __init__(self, *args, **kwargs):
         super(Fourier1DCanvas, self).__init__(*args, **kwargs)
         self.create_lines()
+        self.function = None
+        Clock.schedule_once(self.refresh_graphics, 0)
     def create_lines(self):
         if self.real_line is None:
             with self.canvas:
@@ -58,7 +61,8 @@ class Fourier1DCanvas(Widget):
         arr = n.zeros(self.line_points, dtype=n.complex)
         print arr
         self.function = arr
-        #self.set_lines_from_function()
+        print self.function
+        self.set_lines_from_function()
 
     def get_line_basepoints(self):
         xs = list(n.linspace(self.x, self.x+self.width, self.line_points))
@@ -70,20 +74,40 @@ class Fourier1DCanvas(Widget):
         return points
 
     def set_lines_from_function(self):
+        print ' SET LINES', self.function, type(self.function)
         reals = self.function.real
         imags = self.function.imag
         abss = n.abs(self.function)
+        print '...and'
 
         maxr = n.max(n.abs(reals))
         maxi = n.max(n.abs(imags))
 
+        print 'yay'
+
         scale_max = max(maxr, maxi)
+        if scale_max == 0:
+            scale_max = 1
         abs_max = n.max(abss)
+        if abs_max == 0:
+            abs_max = 1
+
+        print reals
+        print imags
+
+        print 'moo'
 
         for i in range(self.line_points):
             self.real_line.points[2*i+1] = self.y + 0.5*self.height*(1 + reals[i] / scale_max)
             self.imag_line.points[2*i+1] = self.y + 0.5*self.height*(1 + imags[i] / scale_max)
             self.abs_line.points[2*i+1] = self.y + self.height*(abss[i] / abs_max)
+
+        print 'SET POINTS'
+        print self.real_line.points
+        print self.imag_line.points
+        print self.abs_line.points
+
+        self.refresh_graphics()
 
     def get_line_index(self, x):
         index = int((x - self.x) / self.width * self.line_points)
@@ -99,9 +123,7 @@ class Fourier1DCanvas(Widget):
         self.reset_graph_line()
 
     def on_touch_down(self, touch):
-        self.refresh_graphics()
-        print self.real_line.points
-        #self.on_touch_move(touch)
+        self.on_touch_move(touch)
     def on_touch_move(self, touch):
         if not self.collide_point(*touch.pos):
             return False
@@ -111,14 +133,21 @@ class Fourier1DCanvas(Widget):
         if old_index == index:
             if self.editing == 'real':
                 self.real_line.points[2*index + 1] = touch.y
+                self.function.real[index] = (touch.y - (self.y + 0.5*self.height)) / (0.5*self.height) * self.real_scale
             elif self.editing == 'imag':
                 self.imag_line.points[2*index + 1] = touch.y
+                self.function.imag[index] = (touch.y - (self.y + 0.5*self.height)) / (0.5*self.height) * self.imag_scale
+            self.abs_line.points[2*index + 1] = self.y + (n.abs(self.function[index]) / self.abs_scale) * self.height
+            print self.abs_line.points[2*index + 1]
         else:
             for cur_index in range(old_index, index, int(n.sign(index-old_index))):
                 if self.editing == 'real':
                     self.real_line.points[2*cur_index + 1] = touch.y
+                    self.function.real[cur_index] = (touch.y - (self.y + 0.5*self.height)) / (0.5*self.height) * self.real_scale
                 if self.editing == 'imag':
                     self.imag_line.points[2*cur_index + 1] = touch.y
+                    self.function.imag[cur_index] = (touch.y - (self.y + 0.5*self.height)) / (0.5*self.height) * self.imag_scale
+                self.abs_line.points[2*cur_index + 1] = self.y + (n.abs(self.function[cur_index]) / self.abs_scale) * self.height
             print '...'
         self.refresh_graphics()
 
@@ -129,6 +158,14 @@ class Fourier1DCanvas(Widget):
         self.imag_line.points = self.imag_line.points[:-2]
         self.abs_line.points += [self.x+self.width, self.y]
         self.abs_line.points = self.abs_line.points[:-2]
+
+    def perform_fourier_transform(self, inverse=False):
+        if not inverse:
+            self.function = n.fft.fftshift(n.fft.fft(self.function))
+        else:
+            self.function = n.fft.ifft(n.fft.ifftshift(self.function))
+        self.set_lines_from_function()
+
             
 
 class Fourier2DCanvas(Widget):
