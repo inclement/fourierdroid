@@ -1,5 +1,28 @@
 #:import Window kivy.core.window.Window
 
+<HomeScreen>:
+    orientation: 'vertical'
+    Button:
+        text: '1D'
+        on_press: root.manager.current = '1D'
+    Button:
+        text: '2D'
+        on_press: root.manager.current = '2D'
+    
+
+<FourierManager>:
+    id: rootid
+    Screen:
+        name: 'home'
+        HomeScreen:
+            manager: rootid
+    Screen:
+        name: '1D'
+        Fourier1DScreen:
+    Screen:
+        name: '2D'
+        Fourier2DScreen:
+
 <Fourier1DScreen>:
     orientation: 'vertical'
     Fourier1DCanvas:
@@ -40,6 +63,25 @@
         Line:
             points: [self.x+0.5*self.width, self.y, self.x+0.5*self.width, self.y+self.height]
             width: 2
+    Label:
+        text: '[color=ff0000]' + str(root.real_scale) + '[/color]'
+        markup: True
+        size: self.text_size
+        size: sp(50), sp(20)
+        text_size: self.size
+        pos: root.x + 0.52*root.width, root.y + root.height - sp(20)
+    Label:
+        text: '[color=00ff00]' + str(root.imag_scale) + '[/color]'
+        markup: True
+        size: sp(50), sp(20)
+        text_size: self.size
+        pos: root.x + 0.52*root.width, root.y + root.height - sp(40)
+    Label:
+        text: '[color=0000ff]' + str(root.abs_scale) + '[/color]'
+        markup: True
+        size: sp(50), sp(20)
+        text_size: self.size
+        pos: root.x + 0.52*root.width, root.y + root.height - sp(60)
         
 
 <Fourier2DCanvas>:

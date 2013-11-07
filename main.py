@@ -2,12 +2,15 @@ from kivy.app import App
 from kivy.uix.widget import Widget
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
+from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.properties import NumericProperty, ReferenceListProperty, ObjectProperty, ListProperty, AliasProperty, StringProperty, DictProperty, BooleanProperty, StringProperty, OptionProperty
 
+from kivy import platform
 from kivy.graphics.texture import Texture
 from kivy.graphics.vertex_instructions import Line
 from kivy.graphics.context_instructions import Color
 from kivy.clock import Clock
+from kivy.core.window import Window
 
 import numpy as n
 from colorsys import hsv_to_rgb
@@ -16,19 +19,33 @@ from toast import toast
 
 __version__ = '0.1'
 
+class HomeScreen(BoxLayout):
+    manager = ObjectProperty()
+
+class FourierManager(ScreenManager):
+    def handle_android_back(self):
+        if platform() == 'android':
+            import android
+            res = android.hide_keyboard()
+        self.current = 'home'
+
 class Fourier1DScreen(BoxLayout):
     pass
 
 class Fourier1DCanvas(Widget):
-    line_points = NumericProperty(200)
+    line_points = NumericProperty(500)
 
     real_line = ObjectProperty(None, allownone=True)
     imag_line = ObjectProperty(None, allownone=True)
     abs_line = ObjectProperty(None, allownone=True)
 
-    real_scale = NumericProperty(1)
-    imag_scale = NumericProperty(1)
-    abs_scale = NumericProperty(1)
+    real_scale = NumericProperty(1.)
+    imag_scale = NumericProperty(1.)
+    abs_scale = NumericProperty(2.)
+
+    show_real = BooleanProperty(True)
+    show_imag = BooleanProperty(True)
+    show_abs = BooleanProperty(True)
 
     editing = OptionProperty('real', options=['real', 'imag'])
 
@@ -52,16 +69,13 @@ class Fourier1DCanvas(Widget):
                 self.abs_line = Line(points=self.get_line_basepoints(), width=1)
         
     def reset_graph_line(self):
-        print self.real_line, self.imag_line, self.abs_line
 
         self.real_line.points = self.get_line_basepoints()
         self.imag_line.points = self.get_line_basepoints()
         self.abs_line.points = self.get_line_basepoints()
 
         arr = n.zeros(self.line_points, dtype=n.complex)
-        print arr
         self.function = arr
-        print self.function
         self.set_lines_from_function()
 
     def get_line_basepoints(self):
@@ -73,39 +87,41 @@ class Fourier1DCanvas(Widget):
             points.append(y)
         return points
 
-    def set_lines_from_function(self):
-        print ' SET LINES', self.function, type(self.function)
+    def set_scales_from_function(self):
         reals = self.function.real
         imags = self.function.imag
         abss = n.abs(self.function)
-        print '...and'
 
-        maxr = n.max(n.abs(reals))
-        maxi = n.max(n.abs(imags))
-
-        print 'yay'
-
+        maxr = n.max(n.abs(reals)) * 1.1
+        maxi = n.max(n.abs(imags)) * 1.1
         scale_max = max(maxr, maxi)
+
+        abs_scale = n.max(abss) * 1.1
+        if abs_scale == 0:
+            abs_scale = 2
+
         if scale_max == 0:
             scale_max = 1
-        abs_max = n.max(abss)
-        if abs_max == 0:
-            abs_max = 1
+        if abs_scale == 0:
+            abs_scale = 1
+        
+        self.real_scale = self.imag_scale = float(scale_max)
+        self.abs_scale = float(abs_scale)
 
-        print reals
-        print imags
+    def set_lines_from_function(self):
+        reals = self.function.real
+        imags = self.function.imag
+        abss = n.abs(self.function)
 
-        print 'moo'
+        self.set_scales_from_function()
+
+        scale_max = self.real_scale
+        abs_max = self.abs_scale
 
         for i in range(self.line_points):
             self.real_line.points[2*i+1] = self.y + 0.5*self.height*(1 + reals[i] / scale_max)
             self.imag_line.points[2*i+1] = self.y + 0.5*self.height*(1 + imags[i] / scale_max)
             self.abs_line.points[2*i+1] = self.y + self.height*(abss[i] / abs_max)
-
-        print 'SET POINTS'
-        print self.real_line.points
-        print self.imag_line.points
-        print self.abs_line.points
 
         self.refresh_graphics()
 
@@ -120,6 +136,8 @@ class Fourier1DCanvas(Widget):
     def on_line_points(self, *args):
         self.reset_graph_line()
     def reset(self, *args):
+        self.real_scale = self.imag_scale = 1
+        self.abs_scale = 2
         self.reset_graph_line()
 
     def on_touch_down(self, touch):
@@ -138,7 +156,6 @@ class Fourier1DCanvas(Widget):
                 self.imag_line.points[2*index + 1] = touch.y
                 self.function.imag[index] = (touch.y - (self.y + 0.5*self.height)) / (0.5*self.height) * self.imag_scale
             self.abs_line.points[2*index + 1] = self.y + (n.abs(self.function[index]) / self.abs_scale) * self.height
-            print self.abs_line.points[2*index + 1]
         else:
             for cur_index in range(old_index, index, int(n.sign(index-old_index))):
                 if self.editing == 'real':
@@ -148,7 +165,6 @@ class Fourier1DCanvas(Widget):
                     self.imag_line.points[2*cur_index + 1] = touch.y
                     self.function.imag[cur_index] = (touch.y - (self.y + 0.5*self.height)) / (0.5*self.height) * self.imag_scale
                 self.abs_line.points[2*cur_index + 1] = self.y + (n.abs(self.function[cur_index]) / self.abs_scale) * self.height
-            print '...'
         self.refresh_graphics()
 
     def refresh_graphics(self, *args):
@@ -351,8 +367,26 @@ def intensity_to_rgb(intensity):
 
     
 class FourierApp(App):
+    manager = ObjectProperty()
     def build(self):
-        return Fourier1DScreen()
+        Clock.schedule_once(self.post_build_init, 0)
+        manager = FourierManager()
+        self.manager = manager
+        return manager
+
+    def post_build_init(self,ev):
+        if platform() == 'android':
+            import android
+            android.map_key(android.KEYCODE_BACK,1001)
+
+        win = Window
+        win.bind(on_keyboard=self.my_key_handler)
+
+    def my_key_handler(self,window,keycode1,keycode2,text,modifiers):
+        if keycode1 == 27 or keycode1 == 1001:
+            self.manager.handle_android_back()
+            return True
+        return False
 
 if __name__ == "__main__":
     FourierApp().run()
