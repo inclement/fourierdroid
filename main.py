@@ -197,8 +197,8 @@ class Fourier2DCanvas(Widget):
     real_intensity_texture = ObjectProperty(None,allownone=True)
     real_phase_texture = ObjectProperty(None,allownone=True)
 
-    xnum = NumericProperty(100)
-    ynum = NumericProperty(100)
+    xnum = NumericProperty(50)
+    ynum = NumericProperty(50)
 
     mode = OptionProperty('k-space',options=['k-space','Fourier intensity','Fourier phase'])
 
@@ -336,6 +336,9 @@ class Fourier2DCanvas(Widget):
         if self.mode == 'k-space':
             self.on_touch_move(touch)
     def on_touch_move(self,touch):
+        print 'touched at', touch.pos
+        print 'square props', self.square_x, self.square_y, self.square_width, self.square_height
+        print 'collide?', self.collide_point(*touch.pos)
         if self.mode == 'k-space':
             if self.collide_point(*touch.pos):
                 tx,ty = touch.pos
