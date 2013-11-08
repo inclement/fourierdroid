@@ -15,7 +15,7 @@ from kivy.core.window import Window
 import numpy as n
 from colorsys import hsv_to_rgb
 
-from toast import toast
+#from toast import toast
 
 __version__ = '0.1'
 
